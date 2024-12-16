@@ -25,7 +25,6 @@ def read_from_file(session_name):
     for line in lines:
         session_data = line.strip().split(" | ")
 
-        # Проверка на наличие всех данных
         if len(session_data) != 3:
             logging.warning(f"Некорректная строка в файле: {line.strip()}")
             continue
@@ -57,12 +56,23 @@ def list_sessions(user_id):
     else:
         return "У вас нет активных сессий."
 
-# Добавление и удаление сессий
-# Эти функции предполагаются уже в вашем коде:
+# Функции для добавления и удаления сессий
 def add_session(user_id, session_name, cookies):
-    # Реализация добавления сессии
-    pass
+    if user_id not in user_sessions:
+        user_sessions[user_id] = {}
+    if session_name not in user_sessions[user_id]:
+        user_sessions[user_id][session_name] = {
+            "active": False,
+            "owner": None,
+            "cookies": cookies
+        }
+        logging.info(f"Сессия {session_name} добавлена для пользователя {user_id}.")
+        return True
+    return False
 
 def remove_session(user_id, session_name):
-    # Реализация удаления сессии
-    pass
+    if user_id in user_sessions and session_name in user_sessions[user_id]:
+        del user_sessions[user_id][session_name]
+        logging.info(f"Сессия {session_name} удалена для пользователя {user_id}.")
+        return True
+    return False

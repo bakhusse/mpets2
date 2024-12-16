@@ -1,7 +1,7 @@
 import asyncio
 import logging
-from bs4 import BeautifulSoup
 from aiohttp import ClientSession
+from bs4 import BeautifulSoup
 
 # Функция для получения статистики питомца
 async def get_pet_stats(session: ClientSession):
@@ -74,17 +74,23 @@ async def auto_actions(session, session_name):
     ]
 
     while True:
-        # Переходы по первыми четырём ссылкам 6 раз с задержкой в 1 секунду
-        for action in actions[:4]:
-            for _ in range(6):  # Повторить переход 6 раз
+        # Перейдем по ссылкам 6 раз для первых 4-х
+        for i in range(6):
+            for action in actions[:4]:
                 await visit_url(session, action, session_name)
                 await asyncio.sleep(1)
 
-        # Переход по последней ссылке 1 раз
+        # Один раз по пятой ссылке
         await visit_url(session, actions[4], session_name)
 
-        # Пауза между циклами
-        await asyncio.sleep(60)  # Задержка 60 секунд перед новым циклом
+        # Переход по дополнительным ссылкам
+        for i in range(10, 0, -1):
+            url = f"https://mpets.mobi/go_travel?id={i}"
+            await visit_url(session, url, session_name)
+            await asyncio.sleep(1)
+
+        # Задержка 1 минута перед новым циклом
+        await asyncio.sleep(60)
 
 async def visit_url(session, url, session_name):
     try:
@@ -95,36 +101,3 @@ async def visit_url(session, url, session_name):
                 logging.error(f"[{session_name}] Ошибка при переходе по {url}: {response.status}")
     except Exception as e:
         logging.error(f"[{session_name}] Ошибка при запросе к {url}: {e}")
-
-# Команда для активации сессии
-async def activate_session(update, context):
-    user_id = update.message.from_user.id
-    if len(context.args) < 1:
-        await update.message.reply_text("Использование: /on <имя_сессии>")
-        return
-
-    session_name = context.args[0]
-
-    if user_id in user_sessions and session_name in user_sessions[user_id]:
-        user_sessions[user_id][session_name]["active"] = True
-        await update.message.reply_text(f"Сессия {session_name} активирована!")
-
-        # Автоматически начать действия после активации сессии
-        asyncio.create_task(auto_actions(user_sessions[user_id][session_name]["session"], session_name))
-    else:
-        await update.message.reply_text(f"Сессия с именем {session_name} не найдена.")
-
-# Команда для деактивации сессии
-async def deactivate_session(update, context):
-    user_id = update.message.from_user.id
-    if len(context.args) < 1:
-        await update.message.reply_text("Использование: /off <имя_сессии>")
-        return
-
-    session_name = context.args[0]
-
-    if user_id in user_sessions and session_name in user_sessions[user_id]:
-        user_sessions[user_id][session_name]["active"] = False
-        await update.message.reply_text(f"Сессия {session_name} деактивирована.")
-    else:
-        await update.message.reply_text(f"Сессия с именем {session_name} не найдена.")
